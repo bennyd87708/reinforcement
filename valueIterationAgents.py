@@ -65,6 +65,33 @@ class ValueIterationAgent(ValueEstimationAgent):
           value iteration, V_k+1(...) depends on V_k(...)'s.
         """
         "*** YOUR CODE HERE ***"
+        initStateValues = {}
+        for i in self.mdp.getStates():
+            initStateValues[i] = 0
+        finalStateValues = self.valueIterationHelper(self.iterations, initStateValues)
+        for i in finalStateValues.keys():
+            self.values[i] = finalStateValues[i]
+
+    def valueIterationHelper(self, count, currList):
+        newList = {}
+        if count <= 0:
+            return currList
+        for state in self.mdp.getStates():
+            actions = self.mdp.getPossibleActions(state)
+            if len(actions) < 1:
+                newList[state] = 0
+            else:
+                actionDict = {}
+                for action in actions:
+                    actionSum = 0
+                    stateProb = self.mdp.getTransitionStatesAndProbs(state, action)
+                    for nextState in stateProb:
+                        actionSum += nextState[1] * (self.mdp.getReward(state, action, nextState[0]) + (self.discount * currList[nextState[0]]))
+                    actionDict[action] = actionSum
+                newList[state] = actionDict[max(actionDict, key=actionDict.get)]
+        return self.valueIterationHelper(count - 1, newList)
+
+
 
     def getValue(self, state):
         """
@@ -78,7 +105,12 @@ class ValueIterationAgent(ValueEstimationAgent):
           value function stored in self.values.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        stateProb = self.mdp.getTransitionStatesAndProbs(state, action)
+        sum = 0
+        for i in stateProb:
+            sum += i[1] * (self.mdp.getReward(state, action, i[0]) + (self.values[i[0]] * self.discount))
+        return sum
+
 
     def computeActionFromValues(self, state):
         """
@@ -90,7 +122,19 @@ class ValueIterationAgent(ValueEstimationAgent):
           terminal state, you should return None.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        actions = self.mdp.getPossibleActions(state)
+        if len(actions) == 0:
+            return None
+        actionDict = {}
+        for i in actions:
+            stateProb = self.mdp.getTransitionStatesAndProbs(state, i)
+            sum = 0
+            for j in stateProb:
+                sum += j[1] * (self.mdp.getReward(state, i, j[0]) + (self.values[j[0]] * self.discount))
+            actionDict[i] = sum
+        return max(actionDict, key=actionDict.get)
+
+
 
     def getPolicy(self, state):
         return self.computeActionFromValues(state)
